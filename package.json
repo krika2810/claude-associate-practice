@@ -1,0 +1,1 @@
+{"name":"claude-associate-practice","private":true,"scripts":{"build":"node build.mjs"}}
