@@ -1,0 +1,15 @@
+{
+  "name": "documentary",
+  "version": "1.0.0",
+  "description": "A 2:19 crime-documentary-style video (1920×1080, 30 fps, captions burned in) based on Addy Osmani's essay *\"Your coding agents made you a manager\"*. Each anti-pattern from the essay is a villain giving a disguised-voice interview, and each case ends with a verdict: the essay's best practice.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "three": "^0.160.0"
+  }
+}

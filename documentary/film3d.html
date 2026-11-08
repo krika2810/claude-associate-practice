@@ -1,0 +1,331 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>The Delegation Files</title>
+<style>
+  html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #000; }
+  canvas { display: block; }
+  #ui { position: absolute; inset: 0; pointer-events: none; font-family: "Inter", sans-serif; color: #fff; }
+  .super { position: absolute; left: 150px; bottom: 210px; opacity: 0; }
+  .super .big { font-weight: 300; font-size: 76px; letter-spacing: .02em; line-height: 1; }
+  .super .small { margin-top: 14px; font-weight: 500; font-size: 22px; letter-spacing: .32em; text-transform: uppercase; color: rgba(255,255,255,.72); }
+  .lower { position: absolute; left: 150px; bottom: 200px; opacity: 0; }
+  .lower .rule { width: 0; height: 3px; background: #e50914; margin-bottom: 18px; }
+  .lower .name { font-weight: 700; font-size: 50px; letter-spacing: .14em; }
+  .lower .meta { margin-top: 10px; font-weight: 500; font-size: 21px; letter-spacing: .3em; text-transform: uppercase; color: rgba(255,255,255,.65); }
+  #cap { position: absolute; left: 200px; right: 200px; bottom: 96px; text-align: center; font-weight: 500; font-size: 40px; line-height: 1.3;
+         text-shadow: 0 2px 6px rgba(0,0,0,.9), 0 0 2px rgba(0,0,0,.9); }
+  #cap i { font-style: italic; }
+</style>
+<script type="importmap">
+{ "imports": { "three": "./node_modules/three/build/three.module.js", "three/addons/": "./node_modules/three/examples/jsm/" } }
+</script>
+</head>
+<body>
+<div id="ui">
+  <div class="super" id="super"><div class="big">3:07 AM</div><div class="small">Hour 9 of an unattended run</div></div>
+  <div class="lower" id="lower"><div class="rule" id="rule"></div><div class="name">THE NIGHT SHIFT</div><div class="meta">Identity concealed · Voice altered</div></div>
+  <div id="cap"></div>
+</div>
+<script type="module">
+import * as THREE from "three";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { BokehPass } from "three/addons/postprocessing/BokehPass.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
+import { RectAreaLightUniformsLib } from "three/addons/lights/RectAreaLightUniformsLib.js";
+
+const W = 1920, H = 1080;
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const ease = (p) => { p = clamp(p); return p * p * (3 - 2 * p); };
+const hash = (n) => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+let TL = null;
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setSize(W, H);
+renderer.setPixelRatio(1);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.7;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.prepend(renderer.domElement);
+RectAreaLightUniformsLib.init();
+
+// ------------------------------------------------------------ textures
+function canvasTex(w, h, draw) {
+  const c = document.createElement("canvas"); c.width = w; c.height = h;
+  const g = c.getContext("2d"); draw(g, w, h);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
+  t.userData = { c, g }; return t;
+}
+const wood = canvasTex(1024, 1024, (g, w, h) => {
+  g.fillStyle = "#2a1c13"; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 260; i++) {
+    const y = hash(i) * h, a = .04 + hash(i + 3) * .08;
+    g.strokeStyle = hash(i + 7) > .5 ? `rgba(0,0,0,${a})` : `rgba(120,80,50,${a})`;
+    g.lineWidth = 1 + hash(i + 9) * 4; g.beginPath(); g.moveTo(0, y);
+    for (let x = 0; x <= w; x += 64) g.lineTo(x, y + Math.sin(x / 140 + i) * 6);
+    g.stroke();
+  }
+});
+wood.wrapS = wood.wrapT = THREE.RepeatWrapping;
+const plaster = canvasTex(512, 512, (g, w, h) => {
+  g.fillStyle = "#3b3f45"; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 9000; i++) { g.fillStyle = `rgba(${hash(i) > .5 ? 255 : 0},${hash(i) > .5 ? 255 : 0},${hash(i) > .5 ? 255 : 0},.03)`; g.fillRect(hash(i + 1) * w, hash(i + 2) * h, 2, 2); }
+});
+plaster.wrapS = plaster.wrapT = THREE.RepeatWrapping; plaster.repeat.set(4, 3);
+const soft = canvasTex(64, 64, (g) => { const r = g.createRadialGradient(32, 32, 0, 32, 32, 32); r.addColorStop(0, "rgba(255,255,255,1)"); r.addColorStop(.4, "rgba(255,255,255,.35)"); r.addColorStop(1, "rgba(255,255,255,0)"); g.fillStyle = r; g.fillRect(0, 0, 64, 64); });
+const shaftTex = (stripes) => canvasTex(256, 512, (g, w, h) => {
+  const lg = g.createLinearGradient(0, 0, 0, h); lg.addColorStop(0, "rgba(255,255,255,.9)"); lg.addColorStop(1, "rgba(255,255,255,0)");
+  g.fillStyle = lg; g.fillRect(0, 0, w, h);
+  g.globalCompositeOperation = "destination-in";
+  const sg = g.createLinearGradient(0, 0, w, 0); sg.addColorStop(0, "rgba(0,0,0,0)"); sg.addColorStop(.2, "#000"); sg.addColorStop(.8, "#000"); sg.addColorStop(1, "rgba(0,0,0,0)");
+  g.fillStyle = sg; g.fillRect(0, 0, w, h);
+  if (stripes) { g.globalCompositeOperation = "destination-out"; for (let y = 0; y < h; y += 26) { g.fillStyle = "rgba(0,0,0,.85)"; g.fillRect(0, y, w, 11); } }
+});
+
+// terminal screen
+const screen = canvasTex(1280, 744, () => {});
+const verbs = ["rewriting", "migrating", "refactoring", "regenerating", "patching", "renaming", "deleting", "inlining"];
+const files = ["billing/invoice.ts", "auth/session.ts", "db/schema.sql", "api/users.ts", "jobs/sync.ts", "lib/cache.ts", "web/dashboard.tsx", "core/events.ts"];
+function drawScreen(t) {
+  const { g } = screen.userData, w = 1280, h = 744;
+  g.fillStyle = "#020908"; g.fillRect(0, 0, w, h);
+  g.fillStyle = "#0b1f1d"; g.fillRect(0, 0, w, 44);
+  g.font = "600 22px 'JetBrains Mono'"; g.fillStyle = "#6fd3c8"; g.fillText("agent — unattended run — 09:02:41 elapsed", 24, 30);
+  g.font = "400 25px 'JetBrains Mono'";
+  const n = Math.floor(t / .22) + 30;
+  for (let k = 0; k < 20; k++) {
+    const i = n - 19 + k, y = 84 + k * 33;
+    const warn = i % 9 === 4, h1 = Math.floor(hash(i) * 8), h2 = Math.floor(hash(i + 50) * 8);
+    g.fillStyle = warn ? "#ffb35c" : "#9ff0e6";
+    const sec = String(12 + i % 48).padStart(2, "0");
+    g.fillText(`[03:07:${sec}] ${warn ? "assume users table is append-only" : verbs[h1] + " " + files[h2]}`, 24, y);
+    g.fillStyle = "#3f7d76"; g.fillText(`+${Math.floor(20 + hash(i + 9) * 380)}`, 820, y);
+  }
+  if (Math.floor(t * 2.2) % 2) { g.fillStyle = "#9ff0e6"; g.fillRect(24, 84 + 20 * 33 - 22, 14, 26); }
+  screen.needsUpdate = true;
+}
+// rainy window glass with blurred city behind
+const rain = canvasTex(1024, 768, () => {});
+function drawRain(t) {
+  const { g } = rain.userData, w = 1024, h = 768;
+  const bg = g.createLinearGradient(0, 0, 0, h); bg.addColorStop(0, "#0d1626"); bg.addColorStop(1, "#16243a"); g.fillStyle = bg; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 70; i++) {
+    const x = hash(i) * w, y = h * .45 + hash(i + 1) * h * .55, r = 8 + hash(i + 2) * 26;
+    const col = hash(i + 3) > .6 ? "255,170,90" : hash(i + 3) > .3 ? "140,180,255" : "255,230,190";
+    const rg = g.createRadialGradient(x, y, 0, x, y, r); rg.addColorStop(0, `rgba(${col},.55)`); rg.addColorStop(1, `rgba(${col},0)`);
+    g.fillStyle = rg; g.fillRect(x - r, y - r, r * 2, r * 2);
+  }
+  g.strokeStyle = "rgba(200,220,255,.18)"; g.lineWidth = 1.5;
+  for (let i = 0; i < 220; i++) {
+    const x = hash(i + 100) * w, sp = 120 + hash(i + 200) * 260, len = 10 + hash(i + 300) * 30;
+    const y = ((hash(i + 400) * h + t * sp) % (h + 40)) - 20;
+    g.beginPath(); g.moveTo(x, y); g.lineTo(x + 1, y + len); g.stroke();
+  }
+  for (let i = 0; i < 160; i++) { g.fillStyle = "rgba(210,230,255,.22)"; const x = hash(i + 600) * w, y = hash(i + 700) * h; g.beginPath(); g.arc(x, y, 1 + hash(i + 800) * 2.5, 0, 7); g.fill(); }
+  rain.needsUpdate = true;
+}
+
+const std = (o) => new THREE.MeshStandardMaterial(o);
+function box(w, h, d, mat, x, y, z, parent) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); m.castShadow = m.receiveShadow = true; parent.add(m); return m; }
+
+// ------------------------------------------------------------ scene A: the office at 3am
+const A = new THREE.Scene();
+A.background = new THREE.Color("#020305");
+A.fog = new THREE.FogExp2("#070b10", .12);
+{
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(12, 12), std({ map: wood, roughness: .55, metalness: 0 }));
+  wood.repeat.set(3, 3); floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; A.add(floor);
+  const wallMat = std({ map: plaster, color: "#4a5058", roughness: .95 });
+  const wall = new THREE.Mesh(new THREE.PlaneGeometry(12, 6), wallMat); wall.position.set(0, 3, -2.6); wall.receiveShadow = true; A.add(wall);
+  const side = new THREE.Mesh(new THREE.PlaneGeometry(8, 6), wallMat); side.position.set(-3.2, 3, 0); side.rotation.y = Math.PI / 2; A.add(side);
+  // window
+  const glass = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 1.3), new THREE.MeshBasicMaterial({ map: rain, toneMapped: true }));
+  glass.position.set(-1.55, 1.75, -2.58); A.add(glass);
+  const frameMat = std({ color: "#15181c", roughness: .7 });
+  box(1.8, .06, .08, frameMat, -1.55, 2.42, -2.55, A); box(1.8, .06, .08, frameMat, -1.55, 1.08, -2.55, A);
+  box(.06, 1.4, .08, frameMat, -2.42, 1.75, -2.55, A); box(.06, 1.4, .08, frameMat, -.68, 1.75, -2.55, A); box(.04, 1.3, .06, frameMat, -1.55, 1.75, -2.55, A);
+  box(1.95, .05, .22, frameMat, -1.55, 1.05, -2.48, A);
+  // moonlight through the window
+  const moon = new THREE.DirectionalLight("#7f9ed6", 1.6); moon.position.set(-2.6, 3.4, -4.2); moon.target.position.set(.2, 0, -.5);
+  moon.castShadow = true; moon.shadow.mapSize.set(2048, 2048); moon.shadow.camera.left = -4; moon.shadow.camera.right = 4; moon.shadow.camera.top = 4; moon.shadow.camera.bottom = -4; moon.shadow.radius = 4;
+  A.add(moon, moon.target);
+  A.add(new THREE.HemisphereLight("#1b2a44", "#080604", .4));
+  // warm practical in the far corner for depth (out of focus)
+  const cl = new THREE.Mesh(new THREE.SphereGeometry(.05, 20, 12), new THREE.MeshBasicMaterial({ color: new THREE.Color(5, 2.6, 1.1) })); cl.position.set(1.7, 1.45, -2.35); A.add(cl);
+  const clL = new THREE.PointLight("#ff9a50", 2.2, 3.2, 2); clL.position.set(1.7, 1.45, -2.3); A.add(clL);
+  box(.03, 1.45, .03, std({ color: "#0a0908" }), 1.7, .72, -2.35, A);
+  // light shaft from window
+  const shaft = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 3.6), new THREE.MeshBasicMaterial({ map: shaftTex(false), color: "#6d8fd0", transparent: true, opacity: .12, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+  shaft.position.set(-1.0, 1.2, -1.6); shaft.rotation.set(-.9, .5, 0); A.add(shaft);
+  // desk
+  const deskMat = std({ map: wood, color: "#3a2c24", roughness: .45 });
+  box(1.7, .045, .8, deskMat, .25, .76, -1.75, A);
+  const legMat = std({ color: "#111", metalness: .6, roughness: .4 });
+  for (const [x, z] of [[-.55, -2.1], [1.05, -2.1], [-.55, -1.4], [1.05, -1.4]]) box(.04, .74, .04, legMat, x, .37, z, A);
+  // monitor
+  const bezel = std({ color: "#0b0c0e", roughness: .35, metalness: .3 });
+  box(.7, .43, .03, bezel, .25, 1.16, -1.97, A);
+  box(.05, .3, .05, bezel, .25, .92, -2.0, A); box(.26, .015, .18, bezel, .25, .79, -1.98, A);
+  const scr = new THREE.Mesh(new THREE.PlaneGeometry(.66, .384), new THREE.MeshBasicMaterial({ map: screen, color: new THREE.Color(2.2, 2.2, 2.2) }));
+  scr.position.set(.25, 1.16, -1.953); A.add(scr);
+  const glow = new THREE.RectAreaLight("#5fe0d2", 28, .66, .38); glow.position.set(.25, 1.16, -1.94); glow.lookAt(.25, 1.0, 0); A.add(glow);
+  const spill = new THREE.PointLight("#3fc9bb", 3.5, 2.6, 2); spill.position.set(.25, 1.1, -1.75); A.add(spill);
+  // keyboard, mug, phone, notebook
+  box(.46, .018, .15, std({ color: "#16181b", roughness: .6 }), .25, .79, -1.55, A);
+  const mug = new THREE.Mesh(new THREE.CylinderGeometry(.042, .038, .1, 32), std({ color: "#c9c3b8", roughness: .5 })); mug.position.set(.82, .83, -1.6); mug.castShadow = true; A.add(mug);
+  box(.075, .008, .15, std({ color: "#050505", roughness: .2, metalness: .5 }), -.3, .787, -1.55, A);
+  box(.22, .012, .3, std({ color: "#2b3a4a", roughness: .9 }), -.15, .788, -1.85, A);
+  // empty chair in the foreground
+  const chairMat = std({ color: "#1c1e22", roughness: .7 });
+  const chair = new THREE.Group(); chair.position.set(-.55, 0, -1.0); chair.rotation.y = .6; A.add(chair);
+  box(.52, .07, .5, chairMat, 0, .5, 0, chair); box(.5, .62, .07, chairMat, 0, .92, .24, chair).rotation.x = -.12;
+  box(.05, .45, .05, legMat, 0, .25, 0, chair);
+  // dust in the monitor light
+  const n = 500, pos = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) { pos[i * 3] = -.6 + hash(i) * 1.8; pos[i * 3 + 1] = .8 + hash(i + 1) * .9; pos[i * 3 + 2] = -1.9 + hash(i + 2) * 1.6; }
+  const dg = new THREE.BufferGeometry(); dg.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  A.userData.dust = new THREE.Points(dg, new THREE.PointsMaterial({ map: soft, size: .012, color: "#9fe8df", transparent: true, opacity: .55, depthWrite: false, blending: THREE.AdditiveBlending }));
+  A.userData.dust.userData.base = pos.slice(); A.add(A.userData.dust);
+}
+const camA = new THREE.PerspectiveCamera(32, W / H, .05, 30);
+
+// ------------------------------------------------------------ scene B: the anonymous interview
+const B = new THREE.Scene();
+B.background = new THREE.Color("#020202");
+B.fog = new THREE.FogExp2("#120a06", .22);
+{
+  const wallMat = std({ map: plaster, color: "#3a332e", roughness: .95 });
+  const wall = new THREE.Mesh(new THREE.PlaneGeometry(12, 6), wallMat); wall.position.set(0, 3, -3.2); B.add(wall);
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(12, 12), std({ color: "#1a1410", roughness: .9 })); floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; B.add(floor);
+  // window with sodium streetlight behind blinds
+  const win = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 1.9), new THREE.MeshBasicMaterial({ color: new THREE.Color(1.6, .7, .26) }));
+  win.position.set(1.15, 1.75, -3.18); B.add(win);
+  const slatMat = std({ color: "#0d0a08", roughness: .8 });
+  for (let i = 0; i < 17; i++) { const s = box(2.3, .07, .015, slatMat, 1.15, .85 + i * .112, -3.12, B); s.rotation.x = .55; s.castShadow = false; }
+  const frameMat = std({ color: "#0b0908" });
+  box(2.4, .08, .1, frameMat, 1.15, 2.72, -3.12, B); box(2.4, .08, .1, frameMat, 1.15, .78, -3.12, B);
+  // shafts through the blinds
+  for (const [x, ry, op] of [[.5, .25, .09], [1.25, .1, .12], [1.9, -.1, .08]]) {
+    const sh = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 4.2), new THREE.MeshBasicMaterial({ map: shaftTex(true), color: "#ffad66", transparent: true, opacity: op * 1.8, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+    sh.position.set(x, 1.1, -2.55); sh.rotation.set(-1.25, ry, 0); B.add(sh);
+  }
+  // background practical lamp (out of focus)
+  const lamp = new THREE.Mesh(new THREE.SphereGeometry(.07, 24, 16), new THREE.MeshBasicMaterial({ color: new THREE.Color(4, 2.2, 1) }));
+  lamp.position.set(-.55, 1.3, -2.9); B.add(lamp);
+  const lampL = new THREE.PointLight("#ff9a50", 1.4, 3, 2); lampL.position.copy(lamp.position); B.add(lampL);
+  box(.04, 1.25, .04, std({ color: "#090807" }), -.55, .62, -2.9, B);
+  // hooded figure, seated, backlit
+  const cloth = std({ color: "#0b0b0b", roughness: 1 });
+  const fig = new THREE.Group(); fig.position.set(.55, 0, -1.55); B.add(fig);
+  const prof = [[0, 0], [.2, 0], [.24, .4], [.26, .75], [.3, 1.02], [.27, 1.18], [.17, 1.27], [.09, 1.32], [0, 1.33]].map(([x, y]) => new THREE.Vector2(x, y));
+  const torso = new THREE.Mesh(new THREE.LatheGeometry(prof, 48), cloth); torso.scale.set(1.25, 1, .72); torso.castShadow = true; fig.add(torso);
+  const hood = new THREE.Mesh(new THREE.SphereGeometry(.15, 48, 32), cloth); hood.scale.set(1.08, 1.18, 1.2); hood.position.set(0, 1.47, .03); fig.add(hood);
+  const drape = new THREE.Mesh(new THREE.SphereGeometry(.16, 48, 32), cloth); drape.scale.set(1.12, 1.05, 1.1); drape.position.set(0, 1.41, -.06); fig.add(drape);
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(.13, .2, .2, 32), cloth); neck.position.set(0, 1.3, 0); fig.add(neck);
+    const chairBack = box(.5, .7, .06, std({ color: "#0a0908" }), 0, .95, -.24, fig);
+  B.userData.fig = fig;
+  // rim light from behind + very faint cold fill from the front
+  const rim = new THREE.SpotLight("#ffb070", 60, 6, .5, .6, 2); rim.position.set(1.2, 2.4, -2.9); rim.target = fig; B.add(rim);
+  const rim2 = new THREE.SpotLight("#ff8a4a", 30, 6, .5, .7, 2); rim2.position.set(-.3, 2.0, -2.8); rim2.target = fig; B.add(rim2);
+  const fill = new THREE.DirectionalLight("#46617f", .12); fill.position.set(-1, 1.5, 2); B.add(fill);
+  // bokeh dust
+  const n = 300, pos = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) { pos[i * 3] = -.8 + hash(i + 5) * 2.8; pos[i * 3 + 1] = .6 + hash(i + 6) * 2; pos[i * 3 + 2] = -2.6 + hash(i + 7) * 2.4; }
+  const dg = new THREE.BufferGeometry(); dg.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  B.userData.dust = new THREE.Points(dg, new THREE.PointsMaterial({ map: soft, size: .016, color: "#ffc48a", transparent: true, opacity: .6, depthWrite: false, blending: THREE.AdditiveBlending }));
+  B.userData.dust.userData.base = pos.slice(); B.add(B.userData.dust);
+}
+const camB = new THREE.PerspectiveCamera(30, W / H, .05, 30);
+
+// ------------------------------------------------------------ post
+const composer = new EffectComposer(renderer);
+const renderPass = new RenderPass(A, camA);
+const bokeh = new BokehPass(A, camA, { focus: 2.0, aperture: .02, maxblur: .03 });
+const bloom = new UnrealBloomPass(new THREE.Vector2(W, H), .55, .6, .82);
+const grade = new ShaderPass({
+  uniforms: { tDiffuse: { value: null }, time: { value: 0 }, fade: { value: 1 }, res: { value: new THREE.Vector2(W, H) } },
+  vertexShader: "varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.); }",
+  fragmentShader: `
+    uniform sampler2D tDiffuse; uniform float time; uniform float fade; uniform vec2 res; varying vec2 vUv;
+    float rand(vec2 co){ return fract(sin(dot(co, vec2(12.9898,78.233))) * 43758.5453); }
+    void main(){
+      vec2 uv = vUv; vec2 c = uv - .5;
+      float ca = .0025 * dot(c, c) * 4.;
+      vec3 col = vec3(texture2D(tDiffuse, uv - c * ca).r, texture2D(tDiffuse, uv).g, texture2D(tDiffuse, uv + c * ca).b);
+      float l = dot(col, vec3(.299, .587, .114));
+      col += vec3(-.01, .025, .04) * (1. - l) * .7 + vec3(.05, .02, -.03) * l;
+      col = mix(vec3(l), col, .88);
+      col = (col - .5) * 1.06 + .5 - .012;
+      col *= 1. - smoothstep(.35, 1.05, length(c * vec2(1.25, 1.)));
+      float g = rand(floor(uv * res / 1.5) + fract(time * 13.37) * 100.) - .5;
+      col += g * .075 * (1. - l * .5);
+      float bar = 60. / 1080.;
+      if (uv.y < bar || uv.y > 1. - bar) col = vec3(0.);
+      gl_FragColor = vec4(max(col, 0.) * fade, 1.);
+    }`
+});
+composer.addPass(renderPass); composer.addPass(bokeh); composer.addPass(bloom); composer.addPass(new OutputPass()); composer.addPass(grade);
+
+// ------------------------------------------------------------ timeline
+function captionAt(t) { return TL && TL.captions.find((c) => t >= c.start - .05 && t < c.end + .3); }
+function animateDust(pts, t) {
+  const p = pts.geometry.attributes.position.array, b = pts.userData.base;
+  for (let i = 0; i < p.length; i += 3) { p[i] = b[i] + Math.sin(t * .3 + i) * .03; p[i + 1] = b[i + 1] + Math.sin(t * .2 + i * .7) * .04 + t * .004; p[i + 2] = b[i + 2] + Math.cos(t * .25 + i) * .03; }
+  pts.geometry.attributes.position.needsUpdate = true;
+}
+const sup = document.getElementById("super"), lower = document.getElementById("lower"), rule = document.getElementById("rule"), cap = document.getElementById("cap");
+
+function renderAt(t, frame) {
+  const cold = TL.scenes[0], cut = cold.marks.l1 - .15, back = cold.marks.l2 - .2;
+  const interview = t >= cut && t < back;
+  let scene, cam, focus;
+  if (!interview) {
+    scene = A; cam = camA;
+    const p = ease(clamp(t / 10));
+    const hand = [Math.sin(t * .9) * .006 + Math.sin(t * 2.3) * .002, Math.cos(t * .7) * .004];
+    cam.position.set(lerp(.75, .42, p) + hand[0], lerp(1.34, 1.22, p) + hand[1], lerp(.55, -.7, p));
+    cam.lookAt(.18 + hand[0] * 2, 1.08, -1.95);
+    focus = cam.position.distanceTo(new THREE.Vector3(.25, 1.16, -1.95));
+    drawScreen(t); drawRain(t); animateDust(A.userData.dust, t);
+  } else {
+    scene = B; cam = camB;
+    const lt = t - cut;
+    cam.position.set(-.05 + lt * .012, 1.38 + Math.sin(t * .8) * .004, .45 - lt * .04);
+    cam.lookAt(.42, 1.32, -1.6);
+    focus = cam.position.distanceTo(new THREE.Vector3(.55, 1.4, -1.55));
+    B.userData.fig.rotation.y = -.25 + Math.sin(t * .6) * .015;
+    B.userData.fig.position.y = Math.sin(t * 1.5) * .003;
+    animateDust(B.userData.dust, t);
+  }
+  renderPass.scene = scene; renderPass.camera = cam;
+  bokeh.scene = scene; bokeh.camera = cam;
+  bokeh.uniforms.focus.value = focus;
+  bokeh.uniforms.aperture.value = interview ? .07 : .02;
+  bokeh.uniforms.maxblur.value = interview ? .03 : .016;
+  bokeh.uniforms.nearClip.value = cam.near; bokeh.uniforms.farClip.value = cam.far;
+  bloom.strength = interview ? .9 : .7;
+  grade.uniforms.time.value = frame / 30;
+  grade.uniforms.fade.value = clamp(t / 1.6) * (1 - .25 * Math.max(0, Math.sin(frame * 1.7)) * (hash(frame) > .93 ? 1 : 0));
+  composer.render();
+
+  // overlays
+  const sp = interview ? 0 : clamp((t - 1.0) / .8) * (1 - clamp((t - (cut - .4)) / .4));
+  sup.style.opacity = sp; sup.style.transform = `translateY(${(1 - ease(sp)) * 10}px)`;
+  const lp = interview ? clamp((t - cut - .35) / .6) : 0;
+  lower.style.opacity = lp; rule.style.width = `${ease(clamp((t - cut - .3) / .7)) * 120}px`;
+  const c = captionAt(t);
+  cap.innerHTML = c ? (c.who === "V" ? `<i>${c.text}</i>` : c.text) : "";
+}
+function lerp(a, b, p) { return a + (b - a) * p; }
+window.setTimeline = (tl) => { TL = tl; };
+window.renderAt = renderAt;
+window.fontsReady = () => document.fonts.ready.then(() => Promise.all([document.fonts.load('300 40px "Inter"'), document.fonts.load('500 40px "Inter"'), document.fonts.load('700 40px "Inter"'), document.fonts.load('italic 500 40px "Inter"'), document.fonts.load('400 20px "JetBrains Mono"'), document.fonts.load('600 20px "JetBrains Mono"')]));
+window.sceneReady = true;
+</script>
+</body>
+</html>

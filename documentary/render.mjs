@@ -13,11 +13,26 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const [build, mode, ...rest] = process.argv.slice(2);
 const TL = JSON.parse(fs.readFileSync(path.join(build, "timeline.json"), "utf8"));
 const FPS = 30;
-const total = Math.round(TL.duration * FPS);
+const END = process.env.END ? Number(process.env.END) : TL.duration;
+const total = Math.round(END * FPS);
+const PAGE = process.env.PAGE || "film.html";
+// static server so ES modules (three.js) load
+import http from "node:http";
+const MIME = { ".html": "text/html", ".js": "text/javascript", ".mjs": "text/javascript", ".json": "application/json" };
+const server = http.createServer((req, res) => {
+  const f = path.join(here, decodeURIComponent(new URL(req.url, "http://x").pathname));
+  if (!f.startsWith(here) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end(); }
+  res.writeHead(200, { "content-type": MIME[path.extname(f)] || "application/octet-stream" });
+  fs.createReadStream(f).pipe(res);
+});
+await new Promise((r) => server.listen(0, "127.0.0.1", r));
+const BASE = `http://127.0.0.1:${server.address().port}/`;
 
 async function openPage(browser) {
   const page = await browser.newPage({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
-  await page.goto("file://" + path.join(here, "film.html"));
+  page.on("pageerror", (e) => console.error("pageerror:", e.message));
+  await page.goto(BASE + PAGE);
+  await page.waitForFunction(() => window.renderAt && window.setTimeline, null, { timeout: 60000 });
   await page.evaluate((tl) => window.setTimeline(tl), TL);
   await page.evaluate(() => window.fontsReady());
   return page;
@@ -65,11 +80,12 @@ if (mode === "preview") {
   }
   await Promise.all(jobs);
   fs.writeFileSync(path.join(build, "chunks.txt"), files.map((f) => `file '${f}'`).join("\n"));
-  const outFile = path.join(build, "the-delegation-files.mp4");
+  const outFile = path.join(build, process.env.OUT || "the-delegation-files.mp4");
   await run("ffmpeg", ["-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", path.join(build, "chunks.txt"),
     "-i", path.join(build, "soundtrack.wav"), "-map", "0:v", "-map", "1:a", "-c:v", "copy",
-    "-af", "loudnorm=I=-14:TP=-1.5:LRA=9", "-ar", "48000", "-c:a", "aac", "-b:a", "192k",
-    "-shortest", "-movflags", "+faststart", outFile]);
+    "-af", `afade=t=out:st=${Math.max(0, END - .5)}:d=0.5,loudnorm=I=-14:TP=-1.5:LRA=9`, "-ar", "48000", "-c:a", "aac", "-b:a", "192k",
+    "-t", String(END), "-shortest", "-movflags", "+faststart", outFile]);
   console.log("wrote", outFile);
 }
 await browser.close();
+server.close();
