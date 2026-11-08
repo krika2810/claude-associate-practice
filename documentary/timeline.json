@@ -1,0 +1,480 @@
+{
+ "scenes": [
+  {
+   "id": "cold",
+   "type": "cold",
+   "start": 0.0,
+   "end": 17.046,
+   "marks": {
+    "l0": 2.2,
+    "l1": 6.561,
+    "l2": 10.447
+   }
+  },
+  {
+   "id": "title",
+   "type": "title",
+   "start": 17.046,
+   "end": 24.376,
+   "marks": {
+    "slam": 17.296,
+    "l0": 18.646
+   }
+  },
+  {
+   "id": "c01",
+   "type": "case",
+   "num": "01",
+   "villain": "THE RUBBER STAMP",
+   "prop": "stamp",
+   "verdict": "Give it a way to check its work.",
+   "evidence": [
+    "$ npm test",
+    "\u2717 3 failing   \u2192 agent fixes",
+    "\u2713 48 passing  \u2192 shows you the proof",
+    "tests \u00b7 builds \u00b7 linters \u00b7 screenshots"
+   ],
+   "start": 24.376,
+   "end": 31.963,
+   "marks": {
+    "stamp": 24.426,
+    "villain": 25.076,
+    "verdict": 26.715,
+    "narr": 26.965
+   }
+  },
+  {
+   "id": "c02",
+   "type": "case",
+   "num": "02",
+   "villain": "THE MIND READER",
+   "prop": "eye",
+   "verdict": "Tell it what it can't see.",
+   "evidence": [
+    "Goal: /team p95 load < 2s",
+    "Why: #1 support ticket",
+    "Constraints: no schema changes",
+    "Out of scope: UI changes",
+    "Check: scripts/perf/team.sh"
+   ],
+   "start": 31.963,
+   "end": 41.031,
+   "marks": {
+    "stamp": 32.013,
+    "villain": 32.663,
+    "verdict": 35.767,
+    "narr": 36.017
+   }
+  },
+  {
+   "id": "c03",
+   "type": "case",
+   "num": "03",
+   "villain": "THE GROUNDHOG",
+   "prop": "clock",
+   "verdict": "Make every correction compound.",
+   "evidence": [
+    "CLAUDE.md",
+    "+ exact commands to verify",
+    "+ misleading areas of the code",
+    "+ decisions not in the repo",
+    "+ anything corrected twice"
+   ],
+   "start": 41.031,
+   "end": 48.705,
+   "marks": {
+    "stamp": 41.081,
+    "villain": 41.731,
+    "verdict": 44.071,
+    "narr": 44.321
+   }
+  },
+  {
+   "id": "c04",
+   "type": "case",
+   "num": "04",
+   "villain": "THE ALL-CAPS TYRANT",
+   "prop": "megaphone",
+   "verdict": "Let it decide. Enforce only what can't bend.",
+   "evidence": [
+    "REQUESTS  \u2192 prompts \u00b7 CLAUDE.md \u00b7 skills",
+    "REQUIRED  \u2192 hooks \u00b7 deny rules",
+    "\u201cnever edit the generated client\u201d",
+    "over-process = micromanagement"
+   ],
+   "start": 48.705,
+   "end": 57.623,
+   "marks": {
+    "stamp": 48.755,
+    "villain": 49.405,
+    "verdict": 51.725,
+    "narr": 51.975
+   }
+  },
+  {
+   "id": "c05",
+   "type": "case",
+   "num": "05",
+   "villain": "THE STAMPEDE",
+   "prop": "horns",
+   "verdict": "Plan before it builds.",
+   "evidence": [
+    "plan mode \u2192 surface assumptions",
+    "slice A \u2502 slice B \u2502 slice C",
+    "no overlap",
+    "shared interfaces land first"
+   ],
+   "start": 57.623,
+   "end": 67.864,
+   "marks": {
+    "stamp": 57.673,
+    "villain": 58.323,
+    "verdict": 61.476,
+    "narr": 61.726
+   }
+  },
+  {
+   "id": "c06",
+   "type": "case",
+   "num": "06",
+   "villain": "THE SUNK-COST SCULPTOR",
+   "prop": "chisel",
+   "verdict": "Steer early. Reset fast.",
+   "evidence": [
+    "attempt 1  \u2717",
+    "attempt 2  \u2717",
+    "attempt 3? \u2192 stop",
+    "/clear \u2192 write a better prompt"
+   ],
+   "start": 67.864,
+   "end": 77.549,
+   "marks": {
+    "stamp": 67.914,
+    "villain": 68.564,
+    "verdict": 71.97,
+    "narr": 72.22
+   }
+  },
+  {
+   "id": "c07",
+   "type": "case",
+   "num": "07",
+   "villain": "THE RATIFIER",
+   "prop": "gavel",
+   "verdict": "Delegate the task, never the judgment.",
+   "evidence": [
+    "AGENT  \u2192 style \u00b7 lint \u00b7 tests \u00b7 bugs",
+    "HUMAN  \u2192 security \u00b7 product \u00b7 what ships",
+    "keep diffs small",
+    "review like you'll be paged"
+   ],
+   "start": 77.549,
+   "end": 86.565,
+   "marks": {
+    "stamp": 77.599,
+    "villain": 78.249,
+    "verdict": 81.204,
+    "narr": 81.454
+   }
+  },
+  {
+   "id": "c08",
+   "type": "case",
+   "num": "08",
+   "villain": "THE NIGHT SHIFT",
+   "prop": "hood",
+   "verdict": "Design the run that doesn't need you.",
+   "evidence": [
+    "1  What does done look like?",
+    "2  How does it check itself?",
+    "3  What are its boundaries?",
+    "4  Turn and spend limits?",
+    "5  Who approves the output?"
+   ],
+   "start": 86.565,
+   "end": 95.773,
+   "marks": {
+    "stamp": 86.615,
+    "villain": 87.265,
+    "verdict": 88.991,
+    "narr": 89.241
+   }
+  },
+  {
+   "id": "c09",
+   "type": "case",
+   "num": "09",
+   "villain": "THE THROUGHPUT BARON",
+   "prop": "tophat",
+   "verdict": "Scale verification, not attention.",
+   "evidence": [
+    "\u2717 % of code written by AI",
+    "\u2713 PR cycle time",
+    "\u2713 reverts and rework",
+    "\u2713 checks \u00b7 goals \u00b7 fresh reviewers"
+   ],
+   "start": 95.773,
+   "end": 106.113,
+   "marks": {
+    "stamp": 95.823,
+    "villain": 96.473,
+    "verdict": 99.546,
+    "narr": 99.796
+   }
+  },
+  {
+   "id": "c10",
+   "type": "case",
+   "num": "10",
+   "villain": "THE JUNK DRAWER KING",
+   "prop": "crown",
+   "verdict": "Decide what not to build.",
+   "evidence": [
+    "Who asked for it?",
+    "How will we know it worked?",
+    "What would make us stop?",
+    "limit work in progress"
+   ],
+   "start": 106.113,
+   "end": 114.02,
+   "marks": {
+    "stamp": 106.163,
+    "villain": 106.813,
+    "verdict": 108.968,
+    "narr": 109.218
+   }
+  },
+  {
+   "id": "c11",
+   "type": "case",
+   "num": "11",
+   "villain": "THE IMPOSTOR",
+   "prop": "mask",
+   "verdict": "Know where the analogy breaks.",
+   "evidence": [
+    "eager to agree, quick to overtrust",
+    "one archetype, changes every release",
+    "a notebook, not experience",
+    "still train your juniors"
+   ],
+   "start": 114.02,
+   "end": 123.862,
+   "marks": {
+    "stamp": 114.07,
+    "villain": 114.72,
+    "verdict": 118.824,
+    "narr": 119.074
+   }
+  },
+  {
+   "id": "c12",
+   "type": "case",
+   "num": "12",
+   "villain": "THE SURRENDER",
+   "prop": "flag",
+   "verdict": "Never surrender the judgment.",
+   "evidence": [
+    "ask it to argue against itself",
+    "own the outer loops",
+    "you decide what ships"
+   ],
+   "start": 123.862,
+   "end": 130.862,
+   "marks": {
+    "stamp": 123.912,
+    "villain": 124.562,
+    "verdict": 126.564,
+    "narr": 126.814
+   }
+  },
+  {
+   "id": "outro",
+   "type": "outro",
+   "start": 130.862,
+   "end": 139.454,
+   "marks": {
+    "l0": 131.662,
+    "end": 135.654
+   }
+  }
+ ],
+ "captions": [
+  {
+   "start": 2.2,
+   "end": 5.961,
+   "who": "N",
+   "text": "3:07 AM. The agent has been running for nine hours."
+  },
+  {
+   "start": 6.561,
+   "end": 9.847,
+   "who": "V",
+   "text": "Why babysit it? Start it before bed. Check it in the morning."
+  },
+  {
+   "start": 10.447,
+   "end": 16.146,
+   "who": "N",
+   "text": "Nobody told it what done looked like. By sunrise, four thousand lines, built on a wrong premise."
+  },
+  {
+   "start": 18.646,
+   "end": 23.576,
+   "who": "N",
+   "text": "If you work with coding agents, you're already a manager. These are the habits that betray you."
+  },
+  {
+   "start": 25.076,
+   "end": 26.365,
+   "who": "V",
+   "text": "It looks done. Ship it."
+  },
+  {
+   "start": 26.965,
+   "end": 31.513,
+   "who": "N",
+   "text": "Looks done isn't done. Give it a test, a build, a screenshot. Then ask for the proof."
+  },
+  {
+   "start": 32.663,
+   "end": 35.417,
+   "who": "V",
+   "text": "Make the dashboard faster. It'll figure it out."
+  },
+  {
+   "start": 36.017,
+   "end": 40.581,
+   "who": "N",
+   "text": "Skip what the code already says. Give it the goal, the why, the limits, and what done means."
+  },
+  {
+   "start": 41.731,
+   "end": 43.721,
+   "who": "V",
+   "text": "I'll just fix it again. Every session."
+  },
+  {
+   "start": 44.321,
+   "end": 48.255,
+   "who": "N",
+   "text": "Corrected it twice? Write it into Claude dot M D, or make it a skill."
+  },
+  {
+   "start": 49.405,
+   "end": 51.375,
+   "who": "V",
+   "text": "Never! Always! Think harder!"
+  },
+  {
+   "start": 51.975,
+   "end": 57.173,
+   "who": "N",
+   "text": "Over-process is the new micromanagement. Hard rules only for what must never bend."
+  },
+  {
+   "start": 58.323,
+   "end": 61.126,
+   "who": "V",
+   "text": "Five agents, same task. Five times the output!"
+  },
+  {
+   "start": 61.726,
+   "end": 67.414,
+   "who": "N",
+   "text": "No. One merge conflict with five authors. Plan first, and split the work so nothing overlaps."
+  },
+  {
+   "start": 68.564,
+   "end": 71.62,
+   "who": "V",
+   "text": "One more correction. This time it'll work."
+  },
+  {
+   "start": 72.22,
+   "end": 77.099,
+   "who": "N",
+   "text": "Two failed fixes means the problem is upstream. Start fresh, with a better prompt."
+  },
+  {
+   "start": 78.249,
+   "end": 80.854,
+   "who": "V",
+   "text": "Six hundred lines. Tests are green. Approve."
+  },
+  {
+   "start": 81.454,
+   "end": 86.115,
+   "who": "N",
+   "text": "That isn't review. That's ratification. Treat every diff like you'll get paged for it."
+  },
+  {
+   "start": 87.265,
+   "end": 88.641,
+   "who": "V",
+   "text": "It'll stop when it's finished."
+  },
+  {
+   "start": 89.241,
+   "end": 95.323,
+   "who": "N",
+   "text": "Before any unattended run, answer five questions. Done, checks, boundaries, limits, and who signs off."
+  },
+  {
+   "start": 96.473,
+   "end": 99.196,
+   "who": "V",
+   "text": "Forty percent of our code is written by AI!"
+  },
+  {
+   "start": 99.796,
+   "end": 105.663,
+   "who": "N",
+   "text": "That's activity, not quality. Count the reverts. Add agents only as fast as your checks can watch them."
+  },
+  {
+   "start": 106.813,
+   "end": 108.618,
+   "who": "V",
+   "text": "It's cheap. Build everything."
+  },
+  {
+   "start": 109.218,
+   "end": 113.57,
+   "who": "N",
+   "text": "Building is cheap. Reviewing isn't. The question isn't can we. It's should we."
+  },
+  {
+   "start": 114.72,
+   "end": 118.474,
+   "who": "V",
+   "text": "I run five agents. So I can manage five people."
+  },
+  {
+   "start": 119.074,
+   "end": 123.412,
+   "who": "N",
+   "text": "You can't. People are harder. Agents are eager, confident, and all the same."
+  },
+  {
+   "start": 124.562,
+   "end": 126.214,
+   "who": "V",
+   "text": "Just trust the machine."
+  },
+  {
+   "start": 126.814,
+   "end": 130.412,
+   "who": "N",
+   "text": "Make it argue against its own answer. And own every line that ships."
+  },
+  {
+   "start": 131.662,
+   "end": 134.754,
+   "who": "N",
+   "text": "You don't need the title. Be the reason good code gets written."
+  }
+ ],
+ "duration": 139.454,
+ "title": "THE DELEGATION FILES",
+ "credit": "Based on \u201cYour coding agents made you a manager\u201d by Addy Osmani"
+}

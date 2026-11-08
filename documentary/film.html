@@ -1,0 +1,316 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>The Delegation Files</title>
+<style>
+  :root {
+    --ink: #050607;
+    --paper: #f2efe8;
+    --dim: #8a9196;
+    --red: #ff4b4b;
+    --amber: #ff8a3d;
+    --teal: #46d6cc;
+    --bar: 120px;
+  }
+  html, body { margin: 0; background: #000; }
+  body { width: 1920px; height: 1080px; overflow: hidden; font-family: "Inter", sans-serif; color: var(--paper); }
+  #frame { position: absolute; inset: 0; overflow: hidden; background: var(--ink); }
+  #stage { position: absolute; inset: 0; }
+  .layer { position: absolute; inset: 0; }
+  #grain { position: absolute; inset: 0; width: 1920px; height: 1080px; mix-blend-mode: overlay; opacity: .16; pointer-events: none; image-rendering: pixelated; }
+  #vignette { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 50%, transparent 45%, rgba(0,0,0,.75) 100%); pointer-events: none; }
+  #flicker { position: absolute; inset: 0; background: #000; pointer-events: none; }
+  #flash { position: absolute; inset: 0; background: #fff; pointer-events: none; opacity: 0; }
+  .bar { position: absolute; left: 0; right: 0; height: var(--bar); background: #000; z-index: 5; }
+  .bar.top { top: 0; } .bar.bottom { bottom: 0; }
+  #hud-left { position: absolute; top: 46px; left: 80px; z-index: 6; font: 500 18px "JetBrains Mono"; letter-spacing: .35em; color: #6d7479; }
+  #hud-right { position: absolute; top: 44px; right: 80px; z-index: 6; display: flex; gap: 10px; align-items: center; font: 500 18px "JetBrains Mono"; letter-spacing: .2em; color: #6d7479; }
+  .tick { width: 22px; height: 4px; background: #2a2f33; }
+  .tick.on { background: var(--red); box-shadow: 0 0 10px var(--red); }
+  .tick.done { background: #4b5257; }
+  #caption { position: absolute; left: 160px; right: 160px; bottom: 0; height: var(--bar); z-index: 6; display: flex; align-items: center; justify-content: center; text-align: center; font: 500 31px/1.28 "Inter"; color: #f4f1ea; }
+  .mono { font-family: "JetBrains Mono", monospace; }
+  .display { font-family: "Inter Display", "Inter", sans-serif; }
+  .serif { font-family: "Bitstream Charter", "DejaVu Serif", serif; }
+</style>
+</head>
+<body>
+<div id="frame">
+  <div id="stage"></div>
+  <canvas id="grain" width="960" height="540"></canvas>
+  <div id="vignette"></div>
+  <div id="flicker"></div>
+  <div id="flash"></div>
+  <div class="bar top"></div>
+  <div class="bar bottom"></div>
+  <div id="hud-left"></div>
+  <div id="hud-right"></div>
+  <div id="caption"></div>
+</div>
+<script>
+const FPS = 30;
+let TL = null;
+const $ = (id) => document.getElementById(id);
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const lerp = (a, b, p) => a + (b - a) * p;
+const ease = (p) => { p = clamp(p); return p < .5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2; };
+const out = (p) => 1 - Math.pow(1 - clamp(p), 3);
+const prog = (t, a, d) => clamp((t - a) / d);
+const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+function hash(n) { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }
+
+// ---------------------------------------------------------------- grain
+const noise = [];
+(function makeNoise() {
+  const c = $("grain"), g = c.getContext("2d");
+  for (let k = 0; k < 8; k++) {
+    const img = g.createImageData(960, 540);
+    let seed = 1234 + k * 999;
+    for (let i = 0; i < img.data.length; i += 4) {
+      seed = (seed * 16807) % 2147483647;
+      const v = (seed % 256);
+      img.data[i] = img.data[i + 1] = img.data[i + 2] = v; img.data[i + 3] = 255;
+    }
+    noise.push(img);
+  }
+})();
+
+// ---------------------------------------------------------------- silhouettes
+const BODY = "M120 840 C130 680 200 590 330 560 L355 520 C300 480 290 420 290 340 C290 230 340 190 400 190 C460 190 510 230 510 340 C510 420 500 480 445 520 L470 560 C600 590 670 680 680 840 Z";
+const ARM = "M560 840 C575 700 590 560 600 430 L650 430 C655 560 660 700 680 840 Z";
+function prop(kind, t) {
+  const sway = Math.sin(t * 1.3) * 4;
+  switch (kind) {
+    case "stamp": return `<path d="${ARM}"/><ellipse cx="625" cy="250" rx="40" ry="46"/><rect x="605" y="282" width="40" height="70"/><rect x="540" y="345" width="170" height="74" rx="8"/><g class="lit"><text x="625" y="397" text-anchor="middle" font-family="Inter Display" font-weight="900" font-size="38" fill="var(--red)" letter-spacing="2">LGTM</text></g>`;
+    case "eye": return `<g class="lit"><path d="M340 290 Q400 245 460 290 Q400 335 340 290 Z" fill="none" stroke="var(--red)" stroke-width="5"/><circle cx="400" cy="290" r="14" fill="var(--red)"/></g>`;
+    case "clock": return `<g transform="rotate(${sway} 200 330)"><circle cx="200" cy="330" r="72"/><circle cx="148" cy="262" r="26"/><circle cx="252" cy="262" r="26"/><rect x="150" y="390" width="12" height="40"/><rect x="238" y="390" width="12" height="40"/><g class="lit"><circle cx="200" cy="330" r="56" fill="none" stroke="var(--amber)" stroke-width="3" opacity=".8"/><line x1="200" y1="330" x2="200" y2="292" stroke="var(--amber)" stroke-width="5"/><line x1="200" y1="330" x2="226" y2="344" stroke="var(--amber)" stroke-width="4"/></g></g>`;
+    case "megaphone": return `<path d="M490 360 L700 270 L700 470 L490 400 Z"/><rect x="520" y="400" width="26" height="70"/><g class="lit"><path d="M700 270 L700 470" stroke="var(--red)" stroke-width="5"/></g>`;
+    case "horns": return `<path d="M310 250 C250 230 190 180 170 110 C230 160 280 180 330 205 Z"/><path d="M490 250 C550 230 610 180 630 110 C570 160 520 180 470 205 Z"/>`;
+    case "chisel": return `<path d="${ARM}"/><rect x="615" y="250" width="22" height="190"/><rect x="570" y="215" width="112" height="56" rx="6"/>`;
+    case "gavel": return `<path d="${ARM}"/><g transform="rotate(-20 625 330)"><rect x="614" y="280" width="22" height="160"/><rect x="560" y="236" width="130" height="62" rx="12"/></g>`;
+    case "hood": return `<path d="M230 600 C210 420 250 150 400 140 C550 150 590 420 570 600 Z"/>`;
+    case "tophat": return `<g><rect x="318" y="50" width="164" height="150" rx="6"/><ellipse cx="400" cy="200" rx="140" ry="20"/><g class="lit"><rect x="318" y="160" width="164" height="16" fill="var(--red)" opacity=".75"/></g></g>`;
+    case "crown": return `<path d="M312 205 L312 120 L352 160 L400 95 L448 160 L488 120 L488 205 Z"/><g class="lit"><path d="M312 205 L312 120 L352 160 L400 95 L448 160 L488 120 L488 205" fill="none" stroke="var(--amber)" stroke-width="4"/><circle cx="400" cy="175" r="9" fill="var(--red)"/></g>`;
+    case "mask": return `<g class="lit"><path d="M300 285 C330 255 380 262 400 280 C420 262 470 255 500 285 C495 330 455 350 400 330 C345 350 305 330 300 285 Z" fill="#e9e3d8"/><ellipse cx="355" cy="296" rx="24" ry="13" fill="#000"/><ellipse cx="445" cy="296" rx="24" ry="13" fill="#000"/></g>`;
+    case "flag": {
+      const w = (x) => Math.sin(t * 3 + x / 40) * 10;
+      return `<rect x="612" y="140" width="10" height="700"/><g class="lit"><path d="M622 150 C680 ${150 + w(0)} 740 ${140 - w(1)} 800 ${150 + w(2)} L800 ${260 + w(2)} C740 ${250 - w(1)} 680 ${260 + w(0)} 622 260 Z" fill="#eeeae2"/></g>`;
+    }
+  }
+  return "";
+}
+function figure(kind, t, hue) {
+  const parts = prop(kind, t);
+  const dark = parts.replace(/<g class="lit">[\s\S]*?<\/g>(?=<|$)/g, "");
+  const lit = (parts.match(/<g class="lit">[\s\S]*?<\/g>/g) || []).join("");
+  const breathe = 1 + Math.sin(t * 1.6) * .006;
+  return `<svg viewBox="0 0 800 840" width="800" height="840" style="overflow:visible">
+    <defs><filter id="rim" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="7"/></filter></defs>
+    <g transform="translate(400 840) scale(${breathe}) translate(-400 -840)">
+      <g filter="url(#rim)" fill="none" stroke="${hue}" stroke-width="16" opacity=".9"><path d="${BODY}"/>${dark}</g>
+      <g fill="#030303"><path d="${BODY}"/>${dark}</g>
+      ${lit}
+    </g></svg>`;
+}
+function blinds(hue, intensity, t) {
+  let slats = "";
+  for (let i = 0; i < 10; i++) {
+    const y = 40 + i * 64;
+    slats += `<div style="position:absolute;left:0;right:0;top:${y}px;height:38px;background:linear-gradient(90deg,transparent,${hue} 30%,${hue} 70%,transparent);opacity:${.55 + .1 * Math.sin(t * .7 + i)}"></div>`;
+  }
+  return `<div style="position:absolute;left:1000px;top:150px;width:760px;height:700px;filter:blur(10px);opacity:${intensity};transform:perspective(900px) rotateY(-14deg)">${slats}</div>
+    <div style="position:absolute;inset:0;background:radial-gradient(ellipse 700px 520px at 1380px 500px, ${hue}33, transparent 70%);opacity:${intensity}"></div>`;
+}
+
+// ---------------------------------------------------------------- scenes
+function sceneAt(t) { return TL.scenes.find((s) => t >= s.start && t < s.end) || TL.scenes[TL.scenes.length - 1]; }
+function captionAt(t) { return TL.captions.find((c) => t >= c.start - .05 && t < c.end + .25); }
+function capFor(t, who) { return TL.captions.find((c) => c.who === who && t >= c.start - .1 && t < c.end + 1.2); }
+
+function words(text, p) {
+  const w = text.split(" ");
+  const n = Math.ceil(w.length * clamp(p * 1.15));
+  return w.map((x, i) => `<span style="opacity:${i < n ? 1 : 0};transition:none">${esc(x)}</span>`).join(" ");
+}
+
+function renderCold(s, t) {
+  const m = s.marks, lt = t - s.start;
+  const interview = t >= m.l1 - .1 && t < m.l2 - .15;
+  if (interview) return interviewShot("hood", "THE NIGHT SHIFT", capFor(t, "V"), t, "THE WITNESS", "var(--red)", m.l1 - .1);
+  const dawn = clamp((t - m.l2) / 4);
+  const nLines = Math.floor(lt / .32);
+  const log = [];
+  const verbs = ["rewriting", "migrating", "refactoring", "regenerating", "patching", "renaming", "deleting", "inlining"];
+  const files = ["billing/invoice.ts", "auth/session.ts", "db/schema.sql", "api/users.ts", "jobs/sync.ts", "lib/cache.ts", "web/dashboard.tsx", "core/events.ts"];
+  for (let i = Math.max(0, nLines - 13); i <= nLines; i++) {
+    const h = Math.floor(hash(i) * 8), h2 = Math.floor(hash(i + 50) * 8);
+    const sec = String(12 + i % 48).padStart(2, "0");
+    const hhmm = dawn > 0 ? "06:41" : "03:07";
+    const warn = i % 9 === 4;
+    log.push(`<div style="color:${warn ? "#ffb35c" : "#8fe3da"};white-space:nowrap">[${hhmm}:${sec}] ${warn ? "assume users table is append-only" : verbs[h] + " " + files[h2]} <span style="color:#4f6b68">+${Math.floor(20 + hash(i + 9) * 380)}</span></div>`);
+  }
+  const lines = Math.floor(lerp(380, 3420, clamp(lt / (m.l1 - s.start))) + (t > m.l2 ? lerp(0, 780, clamp((t - m.l2) / 3.5)) : 0));
+  const clock = dawn > 0 ? "06:41 AM" : "03:07 AM";
+  const colon = Math.floor(t * 2) % 2 ? ":" : " ";
+  const wrong = prog(t, m.l2 + 3.0, .25);
+  const push = 1 + lt * .0015;
+  return `
+    <div class="layer" style="background:radial-gradient(ellipse 900px 600px at 50% 46%, #0d2a2c 0%, #050607 70%)"></div>
+    <div class="layer" style="background:radial-gradient(ellipse 1400px 900px at -10% 30%, rgba(255,140,60,${.35 * dawn}), transparent 60%)"></div>
+    <div class="layer" style="transform:scale(${push});transform-origin:50% 55%">
+      <div style="position:absolute;left:620px;top:250px;width:820px;height:500px;border-radius:14px;background:#03100f;box-shadow:0 0 120px rgba(70,214,204,.25), inset 0 0 60px rgba(70,214,204,.08);border:3px solid #10201f;overflow:hidden">
+        <div class="mono" style="position:absolute;left:34px;right:34px;bottom:26px;font-size:21px;line-height:1.55">${log.join("")}</div>
+        <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 2px, transparent 2px 4px)"></div>
+      </div>
+      <div style="position:absolute;left:970px;top:750px;width:120px;height:90px;background:#060808"></div>
+      <div style="position:absolute;left:300px;top:836px;width:1320px;height:40px;background:#070909;border-top:2px solid #0f1c1c"></div>
+    </div>
+    <div class="mono" style="position:absolute;left:140px;top:190px;font-size:64px;font-weight:600;letter-spacing:.06em;color:#e9f6f4">${clock.replace(":", colon)}</div>
+    <div class="mono" style="position:absolute;left:144px;top:276px;font-size:20px;letter-spacing:.3em;color:#6f8f8c">${dawn > 0 ? "HOUR 12 · UNATTENDED RUN" : "HOUR 9 · UNATTENDED RUN"}</div>
+    <div class="mono" style="position:absolute;right:140px;top:200px;text-align:right;font-size:20px;letter-spacing:.25em;color:#6f8f8c">LINES CHANGED<div style="font-size:56px;letter-spacing:.04em;color:${t > m.l2 ? "var(--amber)" : "#e9f6f4"};font-weight:600">${lines.toLocaleString("en-US")}</div></div>
+    <div style="position:absolute;left:0;right:0;top:420px;text-align:center;opacity:${wrong}">
+      <span class="display" style="display:inline-block;padding:16px 38px;border:6px solid var(--red);color:var(--red);font-weight:900;font-size:76px;letter-spacing:.12em;transform:rotate(-4deg) scale(${lerp(1.4, 1, out(wrong))});background:rgba(5,6,7,.94);text-shadow:0 0 30px rgba(255,75,75,.5)">BUILT ON A WRONG PREMISE</span>
+    </div>`;
+}
+
+function interviewShot(kind, name, cap, t, tag, hue, appearAt) {
+  const p = cap ? clamp((t - cap.start) / Math.max(.3, cap.end - cap.start)) : 1;
+  const quote = cap ? cap.text : "";
+  const appear = out(prog(t, appearAt, .35));
+  return `
+    <div class="layer" style="background:radial-gradient(ellipse 1100px 800px at 72% 50%, #1a0a0a 0%, #050506 70%)"></div>
+    ${blinds("#ff6a3d", .85, t)}
+    <div style="position:absolute;left:960px;top:150px;transform:translateX(${lerp(30, 0, appear)}px)">${figure(kind, t, hue)}</div>
+    <div style="position:absolute;left:140px;width:840px;top:120px;bottom:120px;display:flex;flex-direction:column;justify-content:center;gap:0">
+      <div class="mono" style="font-size:22px;letter-spacing:.32em;color:var(--red);opacity:${appear}">${tag}</div>
+      <div class="display" style="margin-top:22px;font-size:${name.length > 18 ? 80 : 92}px;line-height:1;font-weight:900;letter-spacing:.01em;color:#fff;opacity:${appear};transform:translateX(${lerp(-16, 0, appear)}px);text-shadow:-3px 0 rgba(255,60,60,.55), 3px 0 rgba(60,220,255,.35)">${esc(name)}</div>
+      <div class="serif" style="margin-top:44px;min-height:140px;font-size:54px;line-height:1.22;font-style:italic;color:#f4ece4"><span style="color:var(--red);font-size:96px;line-height:0;position:relative;top:22px;margin-right:6px">\u201C</span>${words(quote, p)}</div>
+      <div class="mono" style="margin-top:40px;font-size:18px;letter-spacing:.3em;color:#7a6060;opacity:${appear}">IDENTITY CONCEALED \u00b7 VOICE ALTERED</div>
+    </div>`;
+}
+
+function renderCase(s, t) {
+  const m = s.marks;
+  const villainCap = TL.captions.find((c) => c.who === "V" && Math.abs(c.start - m.villain) < .01);
+  if (t < m.verdict) {
+    return interviewShot(s.prop, s.villain, villainCap, t, `CASE FILE ${s.num}`, "var(--red)", m.stamp);
+  }
+  const narr = TL.captions.find((c) => c.who === "N" && Math.abs(c.start - m.narr) < .01);
+  const vp = out(prog(t, m.verdict, .3));
+  const dur = narr ? narr.end - narr.start : 4;
+  const ev = s.evidence.map((line, i) => {
+    const at = m.narr + .15 + i * (dur * .85 / s.evidence.length);
+    const p = prog(t, at, .35);
+    const shown = Math.ceil(line.length * p);
+    const color = line.startsWith("✗") ? "var(--red)" : line.startsWith("✓") ? "var(--teal)" : i === 0 && /^(CLAUDE\.md|\$)/.test(line) ? "#ffffff" : "#cfe9e6";
+    return `<div style="color:${color};opacity:${p > 0 ? 1 : 0};white-space:pre">${esc(line.slice(0, shown))}${p > 0 && p < 1 ? '<span style="background:var(--teal)">&nbsp;</span>' : ""}</div>`;
+  }).join("");
+  const lt = t - m.verdict;
+  return `
+    <div class="layer" style="background:radial-gradient(ellipse 1200px 800px at 30% 45%, #0a1f22 0%, #050607 70%)"></div>
+    ${blinds("#3fbfb6", .25, t)}
+    <div style="position:absolute;left:1180px;top:150px;opacity:.22;filter:grayscale(1);transform:scale(.9);transform-origin:50% 100%">${figure(s.prop, t, "#555")}</div>
+    <div class="mono" style="position:absolute;left:140px;top:285px;font-size:22px;letter-spacing:.3em;color:#7f8a8f">CASE ${s.num} · <span style="position:relative">${esc(s.villain)}<span style="position:absolute;left:-4px;top:52%;height:3px;background:var(--red);width:${lerp(0, 104, out(prog(t, m.verdict + .1, .3)))}%"></span></span></div>
+    <div style="position:absolute;left:136px;top:345px;transform:rotate(-5deg) scale(${lerp(1.6, 1, vp)});transform-origin:0 50%;opacity:${vp}">
+      <span class="display" style="display:inline-block;padding:6px 22px;border:5px solid var(--teal);color:var(--teal);font-weight:900;font-size:40px;letter-spacing:.24em">VERDICT</span>
+    </div>
+    <div class="display" style="position:absolute;left:140px;top:445px;width:860px;font-size:78px;line-height:1.04;font-weight:800;color:#fff;opacity:${out(prog(t, m.verdict + .1, .35))};transform:translateY(${lerp(18, 0, out(prog(t, m.verdict + .1, .35)))}px)">${esc(s.verdict)}</div>
+    <div style="position:absolute;left:1060px;top:${540 - (90 + s.evidence.length * 56) / 2}px;width:720px;min-height:${90 + s.evidence.length * 56}px;padding:30px 34px;box-sizing:border-box;background:rgba(3,14,14,.86);border:1px solid #1d3b3a;border-left:4px solid var(--teal);box-shadow:0 30px 80px rgba(0,0,0,.6);opacity:${out(prog(t, m.verdict + .2, .3))};transform:translateX(${lerp(40, 0, out(prog(t, m.verdict + .2, .4)))}px)">
+      <div class="mono" style="font-size:16px;letter-spacing:.32em;color:#5f8784;margin-bottom:18px">EVIDENCE</div>
+      <div class="mono" style="font-size:27px;line-height:2.05">${ev}</div>
+    </div>`;
+}
+
+function renderTitle(s, t) {
+  const m = s.marks;
+  const p = prog(t, m.slam, 1.6);
+  const pre = t < m.slam;
+  const sweep = lerp(-30, 130, prog(t, m.slam + .1, 1.6));
+  const spacing = lerp(.6, .22, out(p));
+  if (pre) {
+    const f = hash(Math.floor(t * 20)) > .7 ? .15 : .04;
+    return `<div class="layer" style="background:radial-gradient(ellipse at 50% 50%, rgba(255,75,75,${f}), #000 60%)"></div>`;
+  }
+  return `
+    <div class="layer" style="background:radial-gradient(ellipse 1200px 500px at 50% 50%, #1a0b0b 0%, #030303 70%)"></div>
+    <div style="position:absolute;left:0;right:0;top:380px;text-align:center">
+      <div class="mono" style="font-size:22px;letter-spacing:.5em;color:var(--red);opacity:${out(prog(t, m.slam + .5, .6))}">CASE FILES FROM THE AGE OF CODING AGENTS</div>
+      <div class="display" style="margin-top:26px;font-size:150px;font-weight:900;letter-spacing:${spacing}em;margin-right:-${spacing}em;color:transparent;background:linear-gradient(100deg,#d9d4cc 0%,#d9d4cc ${sweep - 12}%,#ffffff ${sweep}%,#d9d4cc ${sweep + 12}%,#d9d4cc 100%);-webkit-background-clip:text;background-clip:text;filter:drop-shadow(0 0 24px rgba(255,75,75,.25))">THE DELEGATION FILES</div>
+      <div style="width:${lerp(0, 760, out(prog(t, m.slam + .3, .9)))}px;height:2px;background:var(--red);margin:30px auto 0"></div>
+      <div class="serif" style="margin-top:30px;font-size:30px;font-style:italic;color:#bdb6ad;opacity:${out(prog(t, m.slam + 1.2, .8))}">${esc(TL.credit)}</div>
+    </div>`;
+}
+
+function renderOutro(s, t) {
+  const m = s.marks;
+  if (t >= m.end) {
+    const p = (i) => out(prog(t, m.end + .15 + i * .07, .4));
+    const cases = TL.scenes.filter((x) => x.type === "case");
+    const grid = cases.map((c, i) => `<div style="opacity:${p(i)};transform:translateY(${lerp(10, 0, p(i))}px);border-top:2px solid #2b3236;padding-top:12px">
+        <div class="mono" style="font-size:15px;letter-spacing:.25em;color:#8a6363"><span style="color:var(--red)">${c.num}</span> · <s>${esc(c.villain)}</s></div>
+        <div class="display" style="font-size:27px;font-weight:700;line-height:1.15;margin-top:8px;color:#f2efe8">${esc(c.verdict)}</div></div>`).join("");
+    return `<div class="layer" style="background:#050607"></div>
+      <div style="position:absolute;left:140px;right:140px;top:168px;display:flex;justify-content:space-between;align-items:baseline">
+        <div class="display" style="font-size:44px;font-weight:900;letter-spacing:.2em">THE 12 VERDICTS</div>
+        <div class="mono" style="font-size:20px;letter-spacing:.35em;color:var(--teal)">CASE CLOSED</div>
+      </div>
+      <div style="position:absolute;left:140px;right:140px;top:258px;display:grid;grid-template-columns:repeat(4,1fr);gap:30px 36px">${grid}</div>
+      <div class="serif" style="position:absolute;left:0;right:0;top:880px;text-align:center;font-size:24px;font-style:italic;color:#9c958c;opacity:${p(13)}">${esc(TL.credit)} · @addyosmani</div>`;
+  }
+  const cap = capFor(t, "N");
+  const dur = cap ? cap.end - cap.start : 3;
+  const split = m.l0 + dur * .42;
+  const a = out(prog(t, m.l0 - .1, .6)), b = out(prog(t, split, .6));
+  return `<div class="layer" style="background:radial-gradient(ellipse 1100px 600px at 50% 50%, #0b1c1e 0%, #030404 70%)"></div>
+    <div style="position:absolute;left:0;right:0;top:350px;text-align:center">
+      <div class="serif" style="font-size:58px;font-style:italic;color:#cfc8be;opacity:${a};transform:translateY(${lerp(14, 0, a)}px)">You don’t need the title.</div>
+      <div class="display" style="margin-top:34px;font-size:84px;font-weight:900;line-height:1.05;color:#fff;opacity:${b};transform:translateY(${lerp(14, 0, b)}px)">Be the reason good code<br>gets written.</div>
+    </div>`;
+}
+
+// ---------------------------------------------------------------- frame
+function renderAt(t, frameNo) {
+  const s = sceneAt(t);
+  let html = "";
+  if (s.type === "cold") html = renderCold(s, t);
+  else if (s.type === "title") html = renderTitle(s, t);
+  else if (s.type === "case") html = renderCase(s, t);
+  else html = renderOutro(s, t);
+  // fade from/to black at scene boundaries
+  const fin = clamp((t - s.start) / .18), fout = clamp((s.end - t) / .12);
+  const sceneFade = s.type === "outro" ? clamp((TL.duration - t) / 1.2) * fin : fin * (s.type === "cold" ? clamp(t / 1.2) : 1) * (s.type === "title" ? 1 : fout);
+  $("stage").innerHTML = html;
+  $("stage").style.opacity = sceneFade;
+  // camera drift
+  const lt = t - s.start;
+  $("stage").style.transform = `scale(${1 + Math.min(lt, 12) * (s.type === "cold" ? .0015 : .0035)}) translate(${Math.sin(t * .35) * 4}px, ${Math.cos(t * .27) * 3}px)`;
+  // flash on impacts
+  let flash = 0;
+  for (const sc of TL.scenes) {
+    const hit = sc.marks.stamp ?? sc.marks.slam;
+    if (hit !== undefined) flash = Math.max(flash, (t >= hit && t < hit + .12) ? (1 - (t - hit) / .12) * .55 : 0);
+    if (sc.marks.verdict !== undefined && t >= sc.marks.verdict && t < sc.marks.verdict + .08) flash = Math.max(flash, .18);
+  }
+  $("flash").style.opacity = flash;
+  $("flicker").style.opacity = .02 + hash(frameNo) * .035;
+  $("grain").getContext("2d").putImageData(noise[frameNo % noise.length], 0, 0);
+  // HUD
+  const cases = TL.scenes.filter((x) => x.type === "case");
+  const idx = cases.indexOf(s);
+  $("hud-left").textContent = s.type === "cold" || (s.type === "title" && t < s.marks.slam) ? "" : "THE DELEGATION FILES";
+  $("hud-right").innerHTML = idx >= 0 ? `<span style="margin-right:12px">CASE ${s.num} / 12</span>` + cases.map((c, i) => `<div class="tick ${i === idx ? "on" : i < idx ? "done" : ""}"></div>`).join("") : "";
+  // captions (narrator only; villain lines are on-screen quotes)
+  const c = captionAt(t);
+  const showCap = c && c.who === "N" && !(s.type === "outro");
+  $("caption").textContent = showCap ? c.text : "";
+}
+window.setTimeline = (tl) => { TL = tl; };
+window.renderAt = renderAt;
+window.fontsReady = () => document.fonts.ready.then(() => Promise.all([
+  document.fonts.load('900 40px "Inter Display"'), document.fonts.load('800 40px "Inter Display"'), document.fonts.load('700 40px "Inter Display"'),
+  document.fonts.load('500 40px "Inter"'), document.fonts.load('500 20px "JetBrains Mono"'), document.fonts.load('600 20px "JetBrains Mono"'),
+  document.fonts.load('italic 40px "Bitstream Charter"')]));
+</script>
+</body>
+</html>
