@@ -61,7 +61,16 @@ for b in story["beats"]:
         s = voice_fx(tts(ln["text"], c["voice"], c["speed"]))
         d = len(s) / SR
         clips.append((t, s))
-        TL["captions"].append({"start": round(t, 3), "end": round(t + d, 3), "who": ln["who"], "text": ln.get("caption", ln["text"])})
+        hop = SR // 30
+        frames = [s[k * hop:(k + 1) * hop] for k in range(int(np.ceil(len(s) / hop)))]
+        rms = np.array([np.sqrt(np.mean(f ** 2)) if len(f) else 0 for f in frames])
+        hpf = hp(s, 2000)
+        his = np.array([np.sqrt(np.mean(hpf[k * hop:(k + 1) * hop] ** 2)) if len(frames[k]) else 0 for k in range(len(frames))])
+        ref = np.percentile(rms, 95) or 1
+        env = np.clip(rms / ref, 0, 1) ** 0.8
+        hi = np.clip(his / (rms + 1e-6) * 2.2, 0, 1)
+        TL["captions"].append({"start": round(t, 3), "end": round(t + d, 3), "who": ln["who"], "text": ln.get("caption", ln["text"]),
+                               "env": [round(float(x), 2) for x in env], "hi": [round(float(x), 2) for x in hi]})
         t += d + GAP
     if b.get("lines"):
         t -= GAP

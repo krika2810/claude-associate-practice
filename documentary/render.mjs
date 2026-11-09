@@ -33,6 +33,7 @@ async function openPage(browser) {
   page.on("pageerror", (e) => console.error("pageerror:", e.message));
   await page.goto(BASE + PAGE);
   await page.waitForFunction(() => window.renderAt && window.setTimeline, null, { timeout: 60000 });
+  await page.evaluate(() => window.assetsReady || null);
   await page.evaluate((tl) => window.setTimeline(tl), TL);
   await page.evaluate(() => window.fontsReady());
   return page;
