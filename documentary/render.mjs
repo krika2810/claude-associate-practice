@@ -11,7 +11,7 @@ import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const [build, mode, ...rest] = process.argv.slice(2);
-const TL = JSON.parse(fs.readFileSync(path.join(build, "timeline.json"), "utf8"));
+const TL = JSON.parse(fs.readFileSync(path.join(build, process.env.TIMELINE || "timeline.json"), "utf8"));
 const FPS = 30;
 const END = process.env.END ? Number(process.env.END) : TL.duration;
 const total = Math.round(END * FPS);
@@ -82,7 +82,7 @@ if (mode === "preview") {
   fs.writeFileSync(path.join(build, "chunks.txt"), files.map((f) => `file '${f}'`).join("\n"));
   const outFile = path.join(build, process.env.OUT || "the-delegation-files.mp4");
   await run("ffmpeg", ["-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", path.join(build, "chunks.txt"),
-    "-i", path.join(build, "soundtrack.wav"), "-map", "0:v", "-map", "1:a", "-c:v", "copy",
+    "-i", path.join(build, process.env.AUDIO || "soundtrack.wav"), "-map", "0:v", "-map", "1:a", "-c:v", "copy",
     "-af", `afade=t=out:st=${Math.max(0, END - .5)}:d=0.5,loudnorm=I=-14:TP=-1.5:LRA=9`, "-ar", "48000", "-c:a", "aac", "-b:a", "192k",
     "-t", String(END), "-shortest", "-movflags", "+faststart", outFile]);
   console.log("wrote", outFile);

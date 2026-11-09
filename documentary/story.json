@@ -1,0 +1,313 @@
+{
+  "title": "THE DELEGATION FILES",
+  "credit": "A dramatization based on Addy Osmani’s essay “Your coding agents made you a manager”",
+  "cast": {
+    "SAM": {
+      "voice": "am_michael",
+      "speed": 1.02,
+      "name": "SAM",
+      "role": "Staff Engineer"
+    },
+    "RUTH": {
+      "voice": "af_heart",
+      "speed": 0.98,
+      "name": "RUTH",
+      "role": "Engineering Manager"
+    },
+    "DEV": {
+      "voice": "am_puck",
+      "speed": 1.04,
+      "name": "DEV",
+      "role": "On-call Engineer"
+    },
+    "VP": {
+      "voice": "bm_george",
+      "speed": 1.0,
+      "name": "THE VP",
+      "role": "VP of Engineering"
+    }
+  },
+  "beats": [
+    {
+      "part": "cold",
+      "shot": "bedroom",
+      "pre": 2.2,
+      "post": 0.2,
+      "lines": [
+        {
+          "who": "DEV",
+          "text": "My phone went off at three oh seven A.M.",
+          "caption": "My phone went off at 3:07 a.m."
+        }
+      ]
+    },
+    {
+      "shot": "phone_insert",
+      "dur": 2.1
+    },
+    {
+      "shot": "int_sam",
+      "pre": 0.35,
+      "inserts": [
+        {
+          "shot": "office_night",
+          "from": 0.52,
+          "to": 1.0
+        }
+      ],
+      "lines": [
+        {
+          "who": "SAM",
+          "text": "I thought I'd hired a team that never sleeps."
+        }
+      ]
+    },
+    {
+      "shot": "int_ruth",
+      "pre": 0.35,
+      "post": 0.7,
+      "lines": [
+        {
+          "who": "RUTH",
+          "text": "That was the problem. Nobody was managing it."
+        }
+      ]
+    },
+    {
+      "shot": "title",
+      "dur": 4.4
+    },
+    {
+      "part": "rise",
+      "shot": "card",
+      "card": [
+        "PART ONE",
+        "The Rise"
+      ],
+      "dur": 2.4
+    },
+    {
+      "shot": "int_sam",
+      "pre": 0.3,
+      "inserts": [
+        {
+          "shot": "monitors",
+          "from": 0.45,
+          "to": 1.0
+        }
+      ],
+      "lines": [
+        {
+          "who": "SAM",
+          "text": "The first week with coding agents felt like a superpower. One agent. Then three. Then five at once."
+        }
+      ]
+    },
+    {
+      "shot": "int_vp",
+      "pre": 0.3,
+      "inserts": [
+        {
+          "shot": "dashboard_ai",
+          "from": 0.5,
+          "to": 1.0
+        }
+      ],
+      "lines": [
+        {
+          "who": "VP",
+          "text": "Forty percent of our code was written by AI. That number went on every slide."
+        }
+      ]
+    },
+    {
+      "shot": "pr_list",
+      "pre": 0.3,
+      "lines": [
+        {
+          "who": "SAM",
+          "text": "Any idea that sounded plausible was a pull request by lunch."
+        }
+      ]
+    },
+    {
+      "part": "fall",
+      "shot": "card",
+      "card": [
+        "PART TWO",
+        "The Fall"
+      ],
+      "dur": 2.4
+    },
+    {
+      "shot": "int_dev",
+      "pre": 0.3,
+      "inserts": [
+        {
+          "shot": "merge_conflict",
+          "from": 0.5,
+          "to": 1.0
+        }
+      ],
+      "lines": [
+        {
+          "who": "DEV",
+          "text": "Five agents on overlapping work isn't five times the output. It's one merge conflict with five authors."
+        }
+      ]
+    },
+    {
+      "shot": "diff_approve",
+      "pre": 0.3,
+      "lines": [
+        {
+          "who": "SAM",
+          "text": "Six hundred lines. Tests green. Names looked fine. I approved it."
+        }
+      ]
+    },
+    {
+      "shot": "int_ruth",
+      "pre": 0.25,
+      "lines": [
+        {
+          "who": "RUTH",
+          "text": "That's not code review. That's code ratification."
+        }
+      ]
+    },
+    {
+      "shot": "office_night",
+      "pre": 0.3,
+      "lines": [
+        {
+          "who": "SAM",
+          "text": "Then I started a long run before bed. No definition of done."
+        }
+      ]
+    },
+    {
+      "shot": "revert",
+      "pre": 0.3,
+      "post": 0.6,
+      "lines": [
+        {
+          "who": "DEV",
+          "text": "It spent nine hours building on a wrong assumption."
+        }
+      ]
+    },
+    {
+      "part": "turn",
+      "shot": "card",
+      "card": [
+        "PART THREE",
+        "The Turn"
+      ],
+      "dur": 2.4
+    },
+    {
+      "shot": "int_ruth",
+      "pre": 0.3,
+      "lines": [
+        {
+          "who": "RUTH",
+          "text": "You didn't get a tool. You got a team. And you're its manager."
+        }
+      ]
+    },
+    {
+      "shot": "tests_pass",
+      "pre": 0.3,
+      "lines": [
+        {
+          "who": "RUTH",
+          "text": "Good managers don't read every line. They build ways to check the work."
+        }
+      ]
+    },
+    {
+      "shot": "int_sam",
+      "pre": 0.3,
+      "inserts": [
+        {
+          "shot": "brief_doc",
+          "from": 0.4,
+          "to": 1.0
+        }
+      ],
+      "lines": [
+        {
+          "who": "SAM",
+          "text": "Now every task has a test it must pass, and a brief with what it can't see in the code."
+        }
+      ]
+    },
+    {
+      "shot": "claude_md",
+      "pre": 0.3,
+      "lines": [
+        {
+          "who": "SAM",
+          "text": "We plan first. Anything I correct twice goes into Claude dot M D.",
+          "caption": "We plan first. Anything I correct twice goes into CLAUDE.md."
+        }
+      ]
+    },
+    {
+      "shot": "int_ruth",
+      "pre": 0.3,
+      "post": 0.6,
+      "lines": [
+        {
+          "who": "RUTH",
+          "text": "Two failed fixes? Start fresh with a better prompt. And never delegate the judgment."
+        }
+      ]
+    },
+    {
+      "part": "end",
+      "shot": "card",
+      "card": [
+        "PART FOUR",
+        "The New Job"
+      ],
+      "dur": 2.4
+    },
+    {
+      "shot": "dashboard_reverts",
+      "pre": 0.3,
+      "lines": [
+        {
+          "who": "SAM",
+          "text": "Fewer pull requests now. Almost nothing gets reverted."
+        }
+      ]
+    },
+    {
+      "shot": "int_ruth",
+      "pre": 0.3,
+      "lines": [
+        {
+          "who": "RUTH",
+          "text": "You don't need the manager title."
+        }
+      ]
+    },
+    {
+      "shot": "int_sam",
+      "pre": 0.2,
+      "post": 1.2,
+      "lines": [
+        {
+          "who": "SAM",
+          "text": "You just have to be the reason good code gets written."
+        }
+      ]
+    },
+    {
+      "shot": "endcard",
+      "dur": 5.5
+    }
+  ]
+}
